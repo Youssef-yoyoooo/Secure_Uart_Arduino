@@ -4,28 +4,28 @@
 ### 📌 Project Overview
 This project implements a secure communication channel between two microcontrollers (Arduinos) over a standard UART interface. By default, UART transmits data in plaintext, making it vulnerable to eavesdropping (sniffing) and data injection.
 
-This system secures the link using:
-* **Diffie-Hellman (Curve25519) Key Exchange**: To safely establish a shared secret without hardcoding keys.
-* **AES-128 Symmetric Encryption**: To ensure data confidentiality.
-* **Frame Integrity**: To prevent Man-in-the-Middle (MitM) message tampering.
+This system secures the link using ultra-lightweight, IoT-optimized cryptography:
+* **DH-Lite Key Exchange**: A custom 8-bit Diffie-Hellman implementation for microsecond-fast shared secret generation.
+* **Speck 64/128 Encryption**: An NSA-designed lightweight block cipher optimized for resource-constrained microcontrollers (no lookup tables, minimal RAM).
+* **Dual-Line Sniffing Demonstration**: Proves that even with full visibility of the handshake and data, an attacker cannot break the encryption.
 
 ### 🛠️ System Architecture
 
 #### The Hardware Setup
-* **Node A (Alice)**: The Transmitter. Generates sensor data or commands.
-* **Node B (Bob)**: The Receiver. Decrypts and executes commands (e.g., controlling a motor or LED).
-* **Node C (The Attacker)**: A "sniffer" node connected to the TX line of Node A to demonstrate the failure of standard communication vs. the success of this project.
+* **Node A (Alice)**: The Transmitter. Reads an LM35 temperature sensor on button press, encrypts the data, and sends it.
+* **Node B (Bob)**: The Receiver. Decrypts the data and visualizes the key exchange and decrypted messages on a 16x2 LCD.
+* **Node C (The Attacker)**: A dual-line "sniffer" node tapping both Alice's and Bob's TX lines. Demonstrates that intercepted traffic is unreadable.
 
 #### The Security Protocol
-1. **Handshake Phase**: Alice and Bob exchange public keys using the Curve25519 algorithm.
-2. **Key Derivation**: Both nodes compute a 32-byte shared secret. The first 16 bytes are used as the AES-128 Key.
-3. **Encrypted Tunnel**: All subsequent data is padded to 16-byte blocks, encrypted, and sent as a binary packet.
+1. **Handshake Phase (DH-Lite)**: Alice and Bob exchange 1-byte public keys using modular exponentiation over the 8-bit prime 251.
+2. **Key Derivation**: Both nodes compute a shared secret. This secret is expanded into a 128-bit key schedule.
+3. **Encrypted Tunnel (Speck)**: Data (e.g., `"TMP:25C"`) is padded to 8-byte blocks, encrypted using Speck 64/128 (27 rounds), and sent over UART framed by `0xAA` and `0x55` markers.
 
 ### 🔒 Security Features vs. Attack Vectors
 
 | Attack Vector | Standard UART | This Project | Mitigation Technique |
 | :--- | :--- | :--- | :--- |
-| Passive Sniffing | ❌ Vulnerable | ✅ Secure | AES-128 Encryption |
-| Key Theft | ❌ Hardcoded | ✅ Secure | Diffie-Hellman Exchange |
-| Data Tampering | ❌ Vulnerable | ✅ Secure | Block Padding & Integrity Checks |
-| Replay Attack | ❌ Vulnerable | ✅ Partial | Nonce/Counter (Optional Feature) |
+| Passive Sniffing | ❌ Vulnerable | ✅ Secure | Speck 64/128 Encryption |
+| Key Theft | ❌ Hardcoded | ✅ Secure | DH-Lite Key Exchange |
+| Resource Exhaustion | ❌ CPU Heavy | ✅ Optimized | Speck Cipher (Add/Rot/Xor only) |
+| Complete Wiretap | ❌ Vulnerable | ✅ Secure | Discrete Logarithm Problem |
