@@ -1,31 +1,41 @@
 # Secure UART: End-to-End Encrypted Communication
-## Digital Systems Integration (DSI) Project
+## Digital System Interfacing (DSI) Course Project
 
-### 📌 Project Overview
-This project implements a secure communication channel between two microcontrollers (Arduinos) over a standard UART interface. By default, UART transmits data in plaintext, making it vulnerable to eavesdropping (sniffing) and data injection.
+### Overview
+This project implements a secure, encrypted communication channel between two microcontrollers (ATmega328P) over a standard UART interface. Standard UART communication transmits data in plaintext, which is inherently vulnerable to passive eavesdropping and unauthorized data access. This system addresses these vulnerabilities by layering a lightweight cryptographic protocol stack over the serial link, optimized for resource-constrained 8-bit environments.
 
-This system secures the link using ultra-lightweight, IoT-optimized cryptography:
-* **DH-Lite Key Exchange**: A custom 8-bit Diffie-Hellman implementation for microsecond-fast shared secret generation.
-* **Speck 64/128 Encryption**: An NSA-designed lightweight block cipher optimized for resource-constrained microcontrollers (no lookup tables, minimal RAM).
-* **Dual-Line Sniffing Demonstration**: Proves that even with full visibility of the handshake and data, an attacker cannot break the encryption.
+### Core Security Features
+* **DH-Lite Key Exchange**: A lightweight implementation of the Diffie-Hellman protocol using an 8-bit prime (251) and generator (6). This allows for fast, session-specific shared secret generation without pre-shared keys.
+* **Speck 64/128 Encryption**: A modern, lightweight block cipher designed for IoT devices. It utilizes an ARX (Addition-Rotation-XOR) architecture, avoiding memory-intensive lookup tables or S-Boxes, making it ideal for microcontrollers with limited RAM.
+* **Cryptographic Framing**: Implements a synchronization protocol using start (0xAA) and end (0x55) delimiters to ensure data integrity and proper block alignment over noisy serial lines.
+* **Passive Sniffing Resistance**: Demonstrates resistance to wiretapping via a third "Attacker" node that intercepts the communication but remains unable to decipher the encrypted payload.
 
-### 🛠️ System Architecture
+### System Architecture
 
-#### The Hardware Setup
-* **Node A (Alice)**: The Transmitter. Reads an LM35 temperature sensor on button press, encrypts the data, and sends it.
-* **Node B (Bob)**: The Receiver. Decrypts the data and visualizes the key exchange and decrypted messages on a 16x2 LCD.
-* **Node C (The Attacker)**: A dual-line "sniffer" node tapping both Alice's and Bob's TX lines. Demonstrates that intercepted traffic is unreadable.
+#### Node Roles
+* **Alice (Transmitter)**: Monitors an LM35 temperature sensor. Upon a hardware trigger (button press), it performs a DH-Lite handshake, encrypts the sensor data using Speck 64/128, and transmits the ciphered payload.
+* **Bob (Receiver)**: Participates in the key exchange, derives the shared secret, and decrypts incoming UART traffic. Results are displayed in real-time on a 16x2 LCD interface.
+* **Attacker (Sniffer)**: A passive monitoring node connected to the TX/RX lines. It captures and displays the raw UART traffic on an LCD to prove that the data remains confidential even when intercepted.
 
-#### The Security Protocol
-1. **Handshake Phase (DH-Lite)**: Alice and Bob exchange 1-byte public keys using modular exponentiation over the 8-bit prime 251.
-2. **Key Derivation**: Both nodes compute a shared secret. This secret is expanded into a 128-bit key schedule.
-3. **Encrypted Tunnel (Speck)**: Data (e.g., `"TMP:25C"`) is padded to 8-byte blocks, encrypted using Speck 64/128 (27 rounds), and sent over UART framed by `0xAA` and `0x55` markers.
+#### Communication Workflow
+1. **Handshake Phase**: Nodes exchange public keys to establish a shared secret.
+2. **Key Expansion**: The 8-bit shared secret is expanded into a 128-bit key schedule required for the Speck cipher.
+3. **Encrypted Transmission**: Payload data is padded, encrypted in 64-bit blocks, and transmitted within a secure frame.
 
-### 🔒 Security Features vs. Attack Vectors
+### Security Analysis
 
-| Attack Vector | Standard UART | This Project | Mitigation Technique |
+| Attack Vector | Standard UART | Secure UART (This Project) | Mitigation Technique |
 | :--- | :--- | :--- | :--- |
-| Passive Sniffing | ❌ Vulnerable | ✅ Secure | Speck 64/128 Encryption |
-| Key Theft | ❌ Hardcoded | ✅ Secure | DH-Lite Key Exchange |
-| Resource Exhaustion | ❌ CPU Heavy | ✅ Optimized | Speck Cipher (Add/Rot/Xor only) |
-| Complete Wiretap | ❌ Vulnerable | ✅ Secure | Discrete Logarithm Problem |
+| Passive Sniffing | Vulnerable | Secure | Speck 64/128 Block Cipher |
+| Key Compromise | High Risk (Hardcoded) | Mitigated | DH-Lite Dynamic Key Exchange |
+| Resource Constraints | Inefficient (e.g., AES) | Optimized | ARX-based Speck Cipher |
+| Discrete Log Attack | N/A | Resistant (at 8-bit scale) | Discrete Logarithm Problem |
+
+### Project Team
+* **Youssef Basem** (240919)
+* **Moaaz Tamer** (245789)
+* **Marina Ayman** (246635)
+* **Gamila Hasan** (242127)
+* **Ramy Emad** (241897)
+
+**Instructor:** Gehad Mohey

@@ -1,0 +1,24 @@
+# Compiled Arduino files
+*.hex
+*.elf
+*.eep
+*.bin
+*.lst
+
+# LaTeX auxiliary files
+*.aux
+*.log
+*.out
+*.toc
+*.pdf
+*.gz
+*.fdb_latexmk
+*.fls
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+
+# Libraries (if managed by git, keep them, but usually they are separate)
+# libraries/
